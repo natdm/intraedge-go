@@ -1,0 +1,6 @@
+Show race conditons
+Goroutines
+Concurrency
+Rewrite the store using channels
+Rewrite using a singular channel
+Tests for each
