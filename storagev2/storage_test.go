@@ -44,6 +44,39 @@ func TestStorageImproved(t *testing.T) {
 				return nil, err
 			},
 		},
+		{
+			name: "Add passes if the store vaidates the type against the custom validator",
+			err:  nil,
+			val:  nil,
+			fn: func(s *storage.Store) (interface{}, error) {
+				// set up the validator function to check if it's a string,
+				s.ValidateFn = func(i interface{}) bool {
+					_, ok := i.(string)
+					return ok
+				}
+
+				// add a string to see if it passes the validator
+				err := s.Add("Name", "Nate")
+				return nil, err
+			},
+		},
+		{
+			name: "Add fails if the store doesn't vaidate the type against the custom validator",
+			err:  storage.ErrInvalid,
+			val:  nil,
+			fn: func(s *storage.Store) (interface{}, error) {
+				// set up the validator function to check if it's an integer,
+				// or any other type but what you're giving it.
+				s.ValidateFn = func(i interface{}) bool {
+					_, ok := i.(int)
+					return ok
+				}
+
+				// add something other than what the validator is checking against and return the error
+				err := s.Add("Name", "Nate")
+				return nil, err
+			},
+		},
 	}
 
 	for i, tCase := range tCases {
@@ -58,5 +91,23 @@ func TestStorageImproved(t *testing.T) {
 			}
 			require.Equal(t, res, tCases[i].val)
 		})
+	}
+}
+
+func ExampleStore() {
+	st := storage.New()
+	defer st.Close()
+	err := st.Add("Nate", "Hyland")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ExampleStore2() {
+	st := storage.New()
+	defer st.Close()
+	err := st.Add("Nate", "Hyland")
+	if err != nil {
+		panic(err)
 	}
 }

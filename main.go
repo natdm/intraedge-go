@@ -15,6 +15,12 @@ var store models.Storer
 // go get -u github.com/gorilla/mux
 func main() {
 	s := storage.New()
+	// set up the validator to check if the values in the map are a reference to a coffee or not
+	s.ValidateFn = func(v interface{}) bool {
+		_, ok := v.(models.Coffee)
+		return ok
+	}
+
 	defer s.Close()
 	store = s
 

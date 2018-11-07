@@ -5,10 +5,17 @@ import (
 	"fmt"
 )
 
+type ValidatorFn func(interface{}) bool
+
+func ValidateNOOP(interface{}) bool { return true }
+
+var ErrInvalid = errors.New("value invalid for store")
+
 // Store stores a key of type string, and any data as the value
 type Store struct {
-	data map[string]interface{}
-	ops  chan func(map[string]interface{})
+	data       map[string]interface{}
+	ops        chan func(map[string]interface{})
+	ValidateFn ValidatorFn
 }
 
 // New returns a new *Store, and the caller is responsible for calling Close()
@@ -16,8 +23,9 @@ func New() *Store {
 	data := make(map[string]interface{})
 	ops := make(chan func(map[string]interface{}))
 	store := &Store{
-		data: data,
-		ops:  ops,
+		data:       data,
+		ops:        ops,
+		ValidateFn: ValidateNOOP,
 	}
 
 	go func() {
@@ -28,6 +36,13 @@ func New() *Store {
 	return store
 }
 
+func (s *Store) validate(v interface{}) error {
+	if !s.ValidateFn(v) {
+		return ErrInvalid
+	}
+	return nil
+}
+
 func (s *Store) Close() error {
 	close(s.ops)
 	return nil
@@ -35,6 +50,10 @@ func (s *Store) Close() error {
 
 // Add adds key to store, and returns an error if the key already exists
 func (s *Store) Add(key string, val interface{}) error {
+	if err := s.validate(val); err != nil {
+		return err
+	}
+
 	err := make(chan error)
 	go func() {
 		s.ops <- func(state map[string]interface{}) {
